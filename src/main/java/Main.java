@@ -1,32 +1,53 @@
-import java.sql.*;
-import java.util.HashMap;
+import static spark.Spark.get;
+import static spark.SparkBase.port;
+import static spark.SparkBase.staticFileLocation;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import static spark.Spark.*;
-import spark.template.freemarker.FreeMarkerEngine;
-import spark.ModelAndView;
-import static spark.Spark.get;
-
+import com.currybhari.model.Category;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.heroku.sdk.jdbc.DatabaseUrl;
+
+import spark.ModelAndView;
+import spark.template.freemarker.FreeMarkerEngine;
 
 public class Main {
 
   public static void main(String[] args) {
-
-    port(Integer.valueOf(System.getenv("PORT")));
+	String port = System.getenv("PORT");
+	
+    port(Integer.valueOf(port == null?"8080":port));
     staticFileLocation("/public");
+    
+    ObjectWriter objectWriter = new ObjectMapper().writer().withDefaultPrettyPrinter();
 
     get("/hello", (req, res) -> "Hello World");
+    
+    Category category = new Category(1,"Sweet");
+    List<Category> categories = new ArrayList<Category>();
+    categories.add(category);
+    get("/categories", (req, res) -> objectWriter.writeValueAsString(categories));
+    
+    get("categories", (req, res) -> {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("message", "Hello World!");
+
+        return new ModelAndView(attributes, "index.html");
+    }, new FreeMarkerEngine());
 
     get("/", (request, response) -> {
             Map<String, Object> attributes = new HashMap<>();
             attributes.put("message", "Hello World!");
 
-            return new ModelAndView(attributes, "index.ftl");
+            return new ModelAndView(attributes, "index.html");
         }, new FreeMarkerEngine());
 
     get("/db", (req, res) -> {
